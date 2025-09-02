@@ -10,11 +10,14 @@ from rich.text import Text
 import pyfiglet
 from yaspin import yaspin
 import inquirer
-
+from dotenv import load_dotenv
 
 # === Configuration ===
-os.environ["GOOGLE_API_KEY"] = "AIzaSyBJ6vIhn58QllNa8Al4YECrmymbT0zerAY"
-os.environ["OPENAI_API_KEY"] = "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"
+# Charge les variables d'environnement depuis .env
+load_dotenv()
+
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 console = Console()
 
