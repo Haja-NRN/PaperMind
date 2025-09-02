@@ -1,4 +1,4 @@
-# 📄 Gemini & GPT PDF Chat CLI
+# 📄 PaperMind
 
 ![Python](https://img.shields.io/badge/python-3.10+-blue) ![LangChain](https://img.shields.io/badge/langchain-v1.0+-green) ![Gemini](https://img.shields.io/badge/Gemini-2.5%20Flash-orange) ![GPT](https://img.shields.io/badge/GPT-4o-purple)
 
