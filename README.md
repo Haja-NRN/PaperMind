@@ -42,8 +42,8 @@ Un outil en **ligne de commande (CLI)** qui permet de :
 1. **Cloner le projet**
 
 ```bash
-git clone https://github.com/votre-compte/pdf-chat-cli.git
-cd pdf-chat-cli
+git clone https://github.com/Haja-NRN/PaperMind.git
+cd PaperMind
 ```
 
 2. **Créer un environnement Python**
