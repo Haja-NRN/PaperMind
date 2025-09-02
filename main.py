@@ -1,4 +1,5 @@
 import os
+import platform
 
 from google.api_core.exceptions import ResourceExhausted
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -37,27 +38,37 @@ def load_model(modele):
         return None
     return  model
 
+# Effacer le terminal
+def clear_terminal():
+    # Windows → 'cls', Linux/Mac → 'clear'
+    if platform.system() == "Windows":
+        os.system("cls")
+    else:
+        os.system("clear")
 # Fonction de titre
-def cli_title(text: str):
-    # Gros titre ASCII art
-    banner = pyfiglet.figlet_format(text)
+def cli_title(project_name: str, author: str):
+    # Gros titre ASCII
+    banner = pyfiglet.figlet_format(project_name,font="3-d")
     console.print(f"[bold cyan]{banner}[/bold cyan]", justify="center")
 
-    # Présentation brève
-    presentation = Text(
-        f"Bienvenue dans [bold magenta]Gemini CLI Project[/bold magenta] 🚀\n"
-        "Un outil en ligne de commande pour :\n"
-        " - 📂 Importer et résumer vos PDF\n"
-        " - 🤖 Discuter avec Gemini en mode chat\n"
-        " - ⚡ Fournir des réponses rapides et contextuelles\n",
-        justify="center",
+    # Présentation brève adaptée
+    # Présentation directement en markup Rich
+    panel_content = (
+        f"Bienvenue dans [bold magenta]{project_name}[/bold magenta] 🚀\n\n"
+        "Un outil en ligne de commande qui vous permet :\n"
+        " - 📂 D'importer et résumer automatiquement vos fichiers PDF\n"
+        " - 🤖 De discuter avec des modèles IA : Gemini 2.5 Flash ou GPT-4o\n"
+        " - ⚡ D'obtenir des réponses contextuelles basées sur le contenu du PDF\n\n"
+        f"Créé par [bold green]{author}[/bold green]"
     )
 
+    # Affichage dans un panel stylé
     panel = Panel(
-        presentation,
+        panel_content,
         border_style="bright_blue",
-        title="ℹ️ Présentation",
+        title="ℹ️ Présentation du projet",
         padding=(1, 2),
+        highlight=True,
     )
     console.print(panel, justify="center")
 
@@ -157,5 +168,6 @@ def main():
 
 
 if __name__ == "__main__":
-    cli_title("MyApp CLI")
+    clear_terminal()
+    cli_title("PaperMind", "Haja Nirina")
     main()
