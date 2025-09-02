@@ -1,10 +1,13 @@
 import os
+
+from google.api_core.exceptions import ResourceExhausted
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain.chat_models import init_chat_model
 from pypdf import PdfReader
 from rich.panel import Panel
 from rich.progress import Progress
 from rich.console import Console
+from rich.text import Text
 import pyfiglet
 from yaspin import yaspin
 import inquirer
@@ -23,20 +26,38 @@ Réponds comme si nous discutions en temps réel.
 Ta mémoire est la conversation ci-dessous :"""
 
 # === Fonctions utilitaires ===
-
 def load_model(modele):
     if modele=="GPT-4O MINI":
         model = init_chat_model("gpt-4o-mini", model_provider="openai")
-    elif modele=="OPENAI_API_KEY":
+    elif modele=="GEMINI 2.5 flash":
         model = init_chat_model("gemini-2.5-flash", model_provider="google_genai")
     else:
         return None
     return  model
+
 # Fonction de titre
 def cli_title(text: str):
+    # Gros titre ASCII art
     banner = pyfiglet.figlet_format(text)
-    panel = Panel(banner, border_style="cyan")
-    console.print(panel,justify="center")
+    console.print(f"[bold cyan]{banner}[/bold cyan]", justify="center")
+
+    # Présentation brève
+    presentation = Text(
+        f"Bienvenue dans [bold magenta]Gemini CLI Project[/bold magenta] 🚀\n"
+        "Un outil en ligne de commande pour :\n"
+        " - 📂 Importer et résumer vos PDF\n"
+        " - 🤖 Discuter avec Gemini en mode chat\n"
+        " - ⚡ Fournir des réponses rapides et contextuelles\n",
+        justify="center",
+    )
+
+    panel = Panel(
+        presentation,
+        border_style="bright_blue",
+        title="ℹ️ Présentation",
+        padding=(1, 2),
+    )
+    console.print(panel, justify="center")
 
 def ask_file():
     """Demande à l'utilisateur un fichier existant et renvoie son chemin absolu."""
@@ -67,12 +88,14 @@ def resume_pdf(path: str,model) -> str:
                 text = page.extract_text() or ""
 
                 messages = [
-                        SystemMessage(content="Résumez le texte suivant de façon concise :"),
-                        HumanMessage(content=text),
-                    ]
-
-                resume = model.invoke(messages).content
-
+                            SystemMessage(content="Résumez le texte suivant de façon concise :"),
+                            HumanMessage(content=text),
+                        ]
+                try:
+                    resume = model.invoke(messages).content
+                except Exception as e:
+                    print(e)
+                    break
                 pdf_content += resume + "\n"
                 i+=1
                 spinner.text=f"Loading {i }/{nb_pages}"
@@ -132,5 +155,5 @@ def main():
 
 
 if __name__ == "__main__":
-    cli_title("Gemini CLI")
+    cli_title("MyApp CLI")
     main()
