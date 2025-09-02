@@ -5,7 +5,6 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from langchain.chat_models import init_chat_model
 from pypdf import PdfReader
 from rich.panel import Panel
-from rich.progress import Progress
 from rich.console import Console
 from rich.text import Text
 import pyfiglet
