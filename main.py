@@ -1,105 +1,109 @@
-import getpass
 import os
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain.chat_models import init_chat_model
 from pypdf import PdfReader
-import json
+from rich.panel import Panel
+from rich.progress import Progress
+from rich.console import Console
+import pyfiglet
+from yaspin import yaspin
 
 
+# === Configuration ===
 os.environ["GOOGLE_API_KEY"] = "AIzaSyBJ6vIhn58QllNa8Al4YECrmymbT0zerAY"
-
 model = init_chat_model("gemini-2.5-flash", model_provider="google_genai")
 
-my_context = """Repond comme un vrai chatbot et continuez la conversation suivante en retournant seulement la meilleur reponse au Human en prennant compte de la dialogue en bas comme ta memoire si c'est disponible mais ne dis jamais que tu es un IA et fais comme si on s'envoie des message et on parle seulement que de la :"""
+console = Console()
 
-# Fonction pour demander le chemin du fichier
+# Contexte global (conversation + résumé PDF)
+my_context = """Tu es un chatbot humain qui répond naturellement 
+et continue la conversation sans jamais mentionner que tu es une IA. 
+Réponds comme si nous discutions en temps réel. 
+Ta mémoire est la conversation ci-dessous :"""
+
+# === Fonctions utilitaires ===
+# Fonction de titre
+def cli_title(text: str):
+    banner = pyfiglet.figlet_format(text)
+    panel = Panel(banner, border_style="cyan", title="🚀 MyApp")
+    console.print(panel)
+
 def ask_file():
-    while True:
-        file_path = input("📂 Entrez le chemin du fichier : ").strip()
+    """Demande à l'utilisateur un fichier existant et renvoie son chemin absolu."""
+    file_path = input("📂 Entrez le chemin du fichier : ").strip()
+    if os.path.isfile(file_path):
+        abs_path = os.path.abspath(file_path)
+        console.print(f"✅ Fichier trouvé : {abs_path}", style="green")
+        return abs_path
+    else:
+        console.print("❌ Fichier introuvable.", style="red")
+        return None
 
-        # Vérifie si le chemin existe
-        if os.path.isfile(file_path):
-            # Convertit en chemin absolu pour éviter les ambiguïtés
-            abs_path = os.path.abspath(file_path)
-            print(f"✅ Fichier trouvé : {abs_path}")
-            return abs_path
-        else:
-            print("❌ Fichier introuvable, réessayez...")
-            return False
 
-def resume_pdf(path):
-    pdf_content=""
-    i=0
-    # Lecture du pdf
+def resume_pdf(path: str) -> str:
+    """Lit et résume chaque page du PDF, retourne un texte consolidé."""
+    pdf_content = ""
     reader = PdfReader(path)
-
-    # Nombre total de pages
     nb_pages = len(reader.pages)
 
-    print(f"📄 Le PDF contient {nb_pages} pages.")
-    while i<nb_pages:
+    console.print(f"📄 Le PDF contient {nb_pages} pages.", style="bold cyan")
+    for i, page in enumerate(reader.pages):
         try:
-            page = reader.pages[i]
-            text = page.extract_text()
+            text = page.extract_text() or ""
 
-            # Demande de resumez la page donnee
             messages = [
-                SystemMessage(content="Resumez le texte que je vous donne la"),
+                SystemMessage(content="Résumez le texte suivant de façon concise :"),
                 HumanMessage(content=text),
             ]
 
-            # Resumez de la page
-            text = model.invoke(messages).content
-            # Sauvegarde du texte de la page resumé
-            pdf_content+=text
-            print("✅ Page {}/{} resumé avec succés".format(i+1, nb_pages))
-            i += 1
+            resume = model.invoke(messages).content
+            pdf_content += resume + "\n"
 
-        except IndexError:
-            break
+            console.log(f"✅ Page {i+1}/{nb_pages} résumée")
+        except Exception as e:
+            console.print(f"❌ Erreur à la page {i+1}: {e}", style="red")
 
-    return pdf_content
+    return pdf_content.strip()
 
-def prompt(my_prompt):
+
+def prompt(user_input: str) -> str:
+    """Construit le contexte et génère la réponse du chatbot."""
     global my_context
 
-    # On ajoute le prompt de l'utilisateur au context comme suit Human:prompt_user
-    my_context = f"""{my_context} \nHuman : {my_prompt}\nBot:"""
+    my_context += f"\nHuman: {user_input}\nBot:"
 
     messages = [
         SystemMessage(content=my_context),
-        HumanMessage(content=my_prompt),
+        HumanMessage(content=user_input),
     ]
-    # Reponse du bot
+
     response = model.invoke(messages).content
-
-    # Resumons la reponse du bot
-    # resume = [
-    #     SystemMessage(content="Resumez ce texte pour être plus concise mais si c'est deja concis alors retournez la tout simplement par ce que c'est pour"),
-    #     HumanMessage(content=response),
-    # ]
-
-    # Concatenation de la reponse du bot au contexte
-    my_context = f"""{my_context}{response}"""
-
-
+    my_context += response  # on enrichit la mémoire
     return response
 
+
+# === Programme principal ===
 def main():
     global my_context
 
-    # Document utiliser pour recuperer des données
+    # Charger un document si nécessaire
     file_path = ask_file()
     if file_path:
-        pdf_content=resume_pdf(file_path)
-        my_context = f"""{my_context}\nVous devez repondre en ce referant seulement au texte suivante mais faite comme si ce n'est que le sujet que tu connais  :{pdf_content}"""
+        pdf_content = resume_pdf(file_path)
+        my_context += (
+            f"\n⚡ Voici le sujet de référence, limite-toi à ce contenu :\n{pdf_content}"
+        )
 
+    # Boucle de chat
     while True:
-        human=input("Me:")
-        if human.lower()=="exit":
+        console.print(f"[bold red]Human:[/bold red]",end=" ")
+        user_input = input()
+        if user_input.lower() == "exit":
             break
-        bot=prompt(human)
-        print(f"Gemini : {bot}")
+        bot_reply = prompt(user_input)
+        console.print(f"[bold magenta]Gemini:[/bold magenta] {bot_reply}")
 
-if __name__=="__main__":
+
+if __name__ == "__main__":
+    cli_title("Gemini CLI")
     main()
